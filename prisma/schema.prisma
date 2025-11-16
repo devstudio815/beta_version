@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Model Guru
+model Guru {
+  id        String   @id @default(uuid())
+  nip       String   @unique
+  nama      String
+  email     String   @unique
+  telepon   String?
+  alamat    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  kelasWali Kelas[] @relation("WaliKelas")
+  
+  @@map("guru")
+}
+
+// Model Kelas
+model Kelas {
+  id        String   @id @default(uuid())
+  nama      String   // contoh: "X IPA 1", "XI IPS 2"
+  tingkat   Int      // contoh: 10, 11, 12
+  tahunAjar String   // contoh: "2024/2025"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  waliKelasId String?
+  waliKelas   Guru?   @relation("WaliKelas", fields: [waliKelasId], references: [id], onDelete: SetNull)
+  siswa       Siswa[]
+
+  @@map("kelas")
+}
+
+// Model Siswa
+model Siswa {
+  id           String   @id @default(uuid())
+  nis          String   @unique
+  nisn         String   @unique
+  nama         String
+  jenisKelamin String   // "L" atau "P"
+  tanggalLahir DateTime
+  tempatLahir  String
+  alamat       String
+  email        String?  @unique
+  telepon      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi
+  kelasId    String?
+  kelas      Kelas?       @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+  
+  // Relasi many-to-many dengan WaliSiswa melalui junction table
+  siswaWali  SiswaWali[]
+
+  @@map("siswa")
+}
+
+// Model Wali Siswa
+model WaliSiswa {
+  id           String   @id @default(uuid())
+  nik          String   @unique
+  nama         String
+  hubungan     String   // contoh: "Ayah", "Ibu", "Wali"
+  pekerjaan    String?
+  alamat       String?
+  telepon      String
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi many-to-many dengan Siswa melalui junction table
+  siswaWali    SiswaWali[]
+
+  @@map("wali_siswa")
+}
+
+// Junction table untuk relasi many-to-many Siswa dan WaliSiswa
+model SiswaWali {
+  id          String    @id @default(uuid())
+  siswaId     String
+  waliSiswaId String
+  isPrimary   Boolean   @default(false) // menandakan wali utama
+  createdAt   DateTime  @default(now())
+
+  // Relasi ke Siswa dan WaliSiswa
+  siswa       Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  waliSiswa   WaliSiswa @relation(fields: [waliSiswaId], references: [id], onDelete: Cascade)
+
+  @@unique([siswaId, waliSiswaId])
+  @@map("siswa_wali")
+}
