@@ -8,7 +8,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://neondb_owner:npg_v4KdqtLehlf8@ep-red-bird-a1o3486n-pooler.ap-southeast-1.aws.neon.tech/monorepo?sslmode=require&channel_binding=require"
 }
 
 // Model Guru
@@ -23,12 +23,12 @@ model Guru {
   updatedAt DateTime @updatedAt
 
   // Relasi
-  kelasWali Kelas[] @relation("WaliKelas")
-  
+  kelasWali      Kelas[]         @relation("WaliKelas")
+  mataPelajaran  MataPelajaran[]
+
   @@map("guru")
 }
 
-// Model Kelas
 model Kelas {
   id        String   @id @default(uuid())
   nama      String   // contoh: "X IPA 1", "XI IPS 2"
@@ -38,20 +38,21 @@ model Kelas {
   updatedAt DateTime @updatedAt
 
   // Relasi
-  waliKelasId String?
-  waliKelas   Guru?   @relation("WaliKelas", fields: [waliKelasId], references: [id], onDelete: SetNull)
-  siswa       Siswa[]
+  waliKelasId   String?
+  waliKelas     Guru?             @relation("WaliKelas", fields: [waliKelasId], references: [id], onDelete: SetNull)
+  siswa         Siswa[]
+  mataPelajaran MataPelajaran[]
+  jadwal        Jadwal[]
 
   @@map("kelas")
 }
 
-// Model Siswa
 model Siswa {
   id           String   @id @default(uuid())
   nis          String   @unique
   nisn         String   @unique
   nama         String
-  jenisKelamin String   // "L" atau "P"
+  jenisKelamin String
   tanggalLahir DateTime
   tempatLahir  String
   alamat       String
@@ -63,9 +64,8 @@ model Siswa {
   // Relasi
   kelasId    String?
   kelas      Kelas?       @relation(fields: [kelasId], references: [id], onDelete: SetNull)
-  
-  // Relasi many-to-many dengan WaliSiswa melalui junction table
   siswaWali  SiswaWali[]
+  nilai      Nilai[]      // tambahkan ini
 
   @@map("siswa")
 }
@@ -103,4 +103,65 @@ model SiswaWali {
 
   @@unique([siswaId, waliSiswaId])
   @@map("siswa_wali")
+}
+
+model MataPelajaran {
+  id          String   @id @default(uuid())
+  kode        String   @unique // contoh: "MTK", "BIN", "IPA"
+  nama        String   // contoh: "Matematika", "Bahasa Indonesia"
+  deskripsi   String?  // deskripsi singkat mata pelajaran
+  kkm         Int?     // Kriteria Ketuntasan Minimal, contoh: 75
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi
+  kelasId     String
+  guruId      String
+  kelas       Kelas    @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  guru        Guru     @relation(fields: [guruId], references: [id], onDelete: Cascade)
+  jadwal      Jadwal[]
+  nilai       Nilai[]
+
+  @@unique([kelasId, kode])
+  @@map("mata_pelajaran")
+}
+model Jadwal {
+  id                String        @id @default(uuid())
+  hari              String
+  jamMulai          String
+  jamSelesai        String
+  ruangan           String?
+  semester          Int
+  tahunAjar         String
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relasi
+  kelasId           String
+  mataPelajaranId   String
+  kelas             Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  mataPelajaran     MataPelajaran @relation(fields: [mataPelajaranId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate schedule
+  @@unique([kelasId, hari, jamMulai, semester, tahunAjar])
+  @@map("jadwal")
+}
+
+model Nilai {
+  id                String        @id @default(uuid())
+  jenisNilai        String
+  nilai             Int
+  tanggal           DateTime
+  keterangan        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relasi
+  siswaId           String
+  mataPelajaranId   String
+  siswa             Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  mataPelajaran     MataPelajaran @relation(fields: [mataPelajaranId], references: [id], onDelete: Cascade)
+
+  @@map("nilai")
 }
