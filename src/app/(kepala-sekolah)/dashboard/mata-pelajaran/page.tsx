@@ -1,0 +1,1 @@
+export {default} from "@/features/mata_pelajaran/components/DashboardMataPelajaran"

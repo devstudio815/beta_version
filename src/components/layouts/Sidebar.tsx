@@ -1,21 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, LucideIcon } from "lucide-react";
-import * as Icons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarData } from "@/types/layouts";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 interface SidebarProps {
   data: SidebarData[];
 }
-
-const getIconComponent = (iconName: string): LucideIcon => {
-  const IconComponent = (Icons as any)[iconName];
-  return IconComponent || Icons.Circle; 
-};
 
 export function Sidebar({ data }: SidebarProps) {
   const pathname = usePathname();
@@ -37,8 +31,7 @@ export function Sidebar({ data }: SidebarProps) {
     const hasChildren = item.children && item.children.length > 0;
     const isActive = pathname === item.link;
     const isOpen = openMenus.has(item.name);
-    const Icon = getIconComponent(item.icon); // ✅ Convert string to component
-
+    const Icon = item.icon
     return (
       <div key={item.name} className="w-full">
         {hasChildren ? (
